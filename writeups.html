@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CTF Write-ups — Virender Saini</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0a0c11;
+  --bg2:     #10131a;
+  --bg3:     #161924;
+  --bg4:     #1c2030;
+  --border:  #242736;
+  --border2: #2e3248;
+  --accent:  #7c6aff;
+  --accent2: #3ecfb2;
+  --accent3: #ff6b6b;
+  --text:    #e4e6f0;
+  --muted:   #6b7090;
+  --muted2:  #9098b8;
+  --mono:    'JetBrains Mono', monospace;
+  --sans:    'Syne', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* NAV */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 3rem;
+  background: rgba(10,12,17,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-logo {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--accent2);
+  letter-spacing: 0.05em;
+  text-decoration: none;
+}
+.nav-logo span { color: var(--muted); }
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+  list-style: none;
+}
+.nav-links a {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted2);
+  text-decoration: none;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: color 0.2s;
+}
+.nav-links a:hover { color: var(--accent2); }
+.nav-links a.active { color: var(--accent); }
+
+/* PAGE HEADER */
+.page-header {
+  padding: 8rem 3rem 3rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.page-header-bg {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(62,207,178,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(62,207,178,0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 60% 40% at 20% 20%, black 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page-header > * { position: relative; z-index: 1; }
+
+.breadcrumb {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.breadcrumb a { color: var(--accent2); text-decoration: none; }
+.breadcrumb a:hover { opacity: 0.8; }
+
+.page-title {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.03em;
+  margin-bottom: 0.5rem;
+}
+
+.page-desc {
+  color: var(--muted2);
+  font-size: 0.95rem;
+  max-width: 500px;
+  margin-bottom: 2rem;
+}
+
+/* FILTERS */
+.filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 5px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--muted2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+.filter-btn.active { background: rgba(62,207,178,0.1); border-color: rgba(62,207,178,0.4); color: var(--accent2); }
+
+/* STATS BAR */
+.stats-bar {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 3rem;
+  display: flex;
+  gap: 3rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-num {
+  font-family: var(--mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--accent2);
+}
+
+.stat-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* MAIN CONTENT */
+.main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 3rem 5rem;
+}
+
+/* FEATURED (big card) */
+.featured-writeup {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2rem;
+  align-items: start;
+  transition: border-color 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+}
+
+.featured-writeup::before {
+  content: 'FEATURED';
+  position: absolute;
+  top: 14px; right: 14px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  background: rgba(124,106,255,0.1);
+  border: 1px solid rgba(124,106,255,0.25);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.featured-writeup:hover { border-color: rgba(124,106,255,0.4); }
+
+.writeup-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.2rem;
+}
+
+.writeup-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  transition: border-color 0.2s, transform 0.2s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+}
+
+.writeup-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+
+.wu-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wu-platform {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid;
+}
+
+.platform-thm    { color: #1db954; border-color: rgba(29,185,84,0.3); background: rgba(29,185,84,0.07); }
+.platform-htb    { color: #9fef00; border-color: rgba(159,239,0,0.3); background: rgba(159,239,0,0.07); }
+.platform-ctfd   { color: var(--accent); border-color: rgba(124,106,255,0.3); background: rgba(124,106,255,0.07); }
+.platform-dawg   { color: #ff9f43; border-color: rgba(255,159,67,0.3); background: rgba(255,159,67,0.07); }
+.platform-other  { color: var(--muted2); border-color: var(--border2); background: var(--bg3); }
+
+.wu-diff {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.diff-easy   { color: #3ecfb2; }
+.diff-medium { color: #ffbd2e; }
+.diff-hard   { color: #ff6b6b; }
+
+.wu-date {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.wu-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.3;
+}
+
+.wu-desc {
+  font-size: 0.86rem;
+  color: var(--muted2);
+  line-height: 1.65;
+  flex: 1;
+}
+
+.wu-tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.wu-tag {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: var(--muted2);
+  border: 1px solid var(--border);
+  background: var(--bg3);
+}
+
+.wu-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.2rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border);
+}
+
+.wu-read {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wu-flag {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.wu-flag.solved { color: #3ecfb2; }
+
+/* section dividers */
+.writeups-section-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 2.5rem 0 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.writeups-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* empty state */
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  display: none;
+}
+
+footer {
+  border-top: 1px solid var(--border);
+  padding: 1.5rem 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+footer p { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+footer a { color: var(--accent2); text-decoration: none; }
+
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { gap: 1rem; }
+  .page-header, .stats-bar, .main { padding-left: 1.5rem; padding-right: 1.5rem; }
+  .featured-writeup { grid-template-columns: 1fr; }
+  footer { flex-direction: column; gap: 0.5rem; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span>~/</span>viitheone</a>
+  <ul class="nav-links">
+    <li><a href="index.html#about">about</a></li>
+    <li><a href="index.html#skills">skills</a></li>
+    <li><a href="index.html#projects">projects</a></li>
+    <li><a href="index.html#experience">experience</a></li>
+    <li><a href="writeups.html" class="active">writeups</a></li>
+    <li><a href="index.html#contact">contact</a></li>
+  </ul>
+</nav>
+
+<div class="page-header-bg"></div>
+
+<div class="page-header">
+  <div class="breadcrumb">
+    <a href="index.html">~</a>
+    <span>/</span>
+    <span>writeups</span>
+  </div>
+  <h1 class="page-title">CTF Write-ups</h1>
+  <p class="page-desc">Notes from the trenches — challenges solved, flags captured, and lessons learned.</p>
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="thm">TryHackMe</button>
+    <button class="filter-btn" data-filter="dawg">DawgCTF</button>
+    <button class="filter-btn" data-filter="web">Web</button>
+    <button class="filter-btn" data-filter="osint">OSINT</button>
+    <button class="filter-btn" data-filter="re">Reverse Eng.</button>
+    <button class="filter-btn" data-filter="crypto">Crypto</button>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat">
+    <span class="stat-num" id="stat-total">7</span>
+    <span class="stat-label">Write-ups</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num">4</span>
+    <span class="stat-label">Platforms</span>
+  </div>
+  <div class="stat">
+    <span class="stat-num" style="color:var(--accent2);">6</span>
+    <span class="stat-label">Flags Captured</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- FEATURED -->
+  <div class="writeups-section-label">Featured</div>
+  <a href="corridor-writeup.html" class="featured-writeup" data-tags="thm web idor">
+    <div>
+      <div class="wu-meta" style="margin-bottom:0.8rem;">
+        <span class="wu-platform platform-thm">TryHackMe</span>
+        <span class="wu-diff diff-easy">Easy</span>
+        <span class="wu-date">Apr 2025</span>
+      </div>
+      <div class="wu-title" style="font-size:1.3rem; margin-bottom:0.6rem;">Corridor</div>
+      <p class="wu-desc" style="max-width:500px;">
+        Classic IDOR vulnerability via MD5-hashed URL parameters. The corridor presents 13 numbered doors — all MD5 hashes of integers 1–13.
+        The hidden room? md5(0). Navigate directly to a resource you were never supposed to reach.
+      </p>
+      <div class="wu-tags" style="margin-top:0.8rem;">
+        <span class="wu-tag">IDOR</span>
+        <span class="wu-tag">MD5</span>
+        <span class="wu-tag">Web</span>
+        <span class="wu-tag">Hash Enumeration</span>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+      <span class="wu-flag solved">✓ Flag captured</span>
+    </div>
+  </a>
+
+  <!-- ALL WRITE-UPS -->
+  <div class="writeups-section-label">All Write-ups</div>
+  <div class="writeup-grid" id="writeup-grid">
+
+    <!-- DawgCTF: DNS Steg -->
+    <div class="writeup-card" data-tags="dawg re crypto">
+      <div class="wu-meta">
+        <span class="wu-platform platform-dawg">DawgCTF</span>
+        <span class="wu-diff diff-medium">Medium</span>
+        <span class="wu-date">Apr 2025</span>
+      </div>
+      <div class="wu-title">DNS-Based Steganography</div>
+      <p class="wu-desc">Java reverse engineering challenge hiding a flag inside DNS TXT records. Decoded the steg scheme and extracted the flag from Java bytecode.</p>
+      <div class="wu-tags">
+        <span class="wu-tag">Java RE</span>
+        <span class="wu-tag">DNS</span>
+        <span class="wu-tag">Steganography</span>
+      </div>
+      <div class="wu-footer">
+        <span class="wu-read">Read →</span>
+        <span class="wu-flag solved">✓ DawgCTF{J@v@_My_B3l0v3d}</span>
+      </div>
+    </div>
+
+    <!-- DawgCTF: Binary Image -->
+    <div class="writeup-card" data-tags="dawg re">
+      <div class="wu-meta">
+        <span class="wu-platform platform-dawg">DawgCTF</span>
+        <span class="wu-diff diff-medium">Medium</span>
+        <span class="wu-date">Apr 2025</span>
+      </div>
+      <div class="wu-title">Binary Image Compression Reversal</div>
+      <p class="wu-desc">Reversing a custom binary image compression algorithm. Reconstructed the original image from compressed bytes to reveal the hidden flag.</p>
+      <div class="wu-tags">
+        <span class="wu-tag">Binary RE</span>
+        <span class="wu-tag">Compression</span>
+        <span class="wu-tag">Image Forensics</span>
+      </div>
+      <div class="wu-footer">
+        <span class="wu-read">Read →</span>
+        <span class="wu-flag solved">✓ Flag captured</span>
+      </div>
+    </div>
+
+    <!-- DawgCTF: Rust Chess -->
+    <div class="writeup-card" data-tags="dawg re">
+      <div class="wu-meta">
+        <span class="wu-platform platform-dawg">DawgCTF</span>
+        <span class="wu-diff diff-hard">Hard</span>
+        <span class="wu-date">Apr 2025</span>
+      </div>
+      <div class="wu-title">Rust Chess GUI — Binary RE</div>
+      <p class="wu-desc">Reverse engineering a Rust chess GUI binary. Analyzed compiled Rust code to understand the win condition and extract the flag.</p>
+      <div class="wu-tags">
+        <span class="wu-tag">Rust</span>
+        <span class="wu-tag">Binary RE</span>
+        <span class="wu-tag">Chess</span>
+      </div>
+      <div class="wu-footer">
+        <span class="wu-read">Read →</span>
+        <span class="wu-flag solved">✓ Flag captured</span>
+      </div>
+    </div>
+
+    <!-- Stranger Things: TRANSLATOR -->
+    <div class="writeup-card" data-tags="crypto">
+      <div class="wu-meta">
+        <span class="wu-platform platform-ctfd">CTF</span>
+        <span class="wu-diff diff-hard">Hard</span>
+        <span class="wu-date">2025</span>
+      </div>
+      <div class="wu-title">TRANSLATOR — Nonce Reuse Stream Cipher</div>
+      <p class="wu-desc">Stranger Things-themed CTF. Exploited nonce reuse in a stream cipher to decrypt ciphertext and recover the flag.</p>
+      <div class="wu-tags">
+        <span class="wu-tag">Stream Cipher</span>
+        <span class="wu-tag">Nonce Reuse</span>
+        <span class="wu-tag">Crypto</span>
+      </div>
+      <div class="wu-footer">
+        <span class="wu-read">Read →</span>
+        <span class="wu-flag solved">✓ CRK{Stat1c_3ch035_h1dd3n_b3n34th_n01s3}</span>
+      </div>
+    </div>
+
+    <!-- Stranger Things: Cookie Forgery -->
+    <div class="writeup-card" data-tags="web crypto">
+      <div class="wu-meta">
+        <span class="wu-platform platform-ctfd">CTF</span>
+        <span class="wu-diff diff-medium">Medium</span>
+        <span class="wu-date">2025</span>
+      </div>
+      <div class="wu-title">Cookie Forgery — Unsigned JSON Sessions</div>
+      <p class="wu-desc">Exploited unsigned JSON session tokens to forge admin cookies. Classic access control failure — no signature verification on the server side.</p>
+      <div class="wu-tags">
+        <span class="wu-tag">Session Tokens</span>
+        <span class="wu-tag">Cookie Forgery</span>
+        <span class="wu-tag">Web</span>
+      </div>
+      <div class="wu-footer">
+        <span class="wu-read">Read →</span>
+        <span class="wu-flag solved">✓ Flag captured</span>
+      </div>
+    </div>
+
+    <!-- THM OSINT -->
+    <div class="writeup-card" data-tags="thm osint">
+      <div class="wu-meta">
+        <span class="wu-platform platform-thm">TryHackMe</span>
+        <span class="wu-diff diff-medium">Medium</span>
+        <span class="wu-date">Apr 2025</span>
+      </div>
+      <div class="wu-title">OSINT — Penmarc'h Maritime Rescue</div>
+      <p class="wu-desc">Historical newspaper research, postal barcode decoding, and tracing a 1925 maritime rescue event in Finistère. Deep-dive OSINT with archival sources.</p>
+      <div class="wu-tags">
+        <span class="wu-tag">OSINT</span>
+        <span class="wu-tag">Historical</span>
+        <span class="wu-tag">Barcode</span>
+        <span class="wu-tag">Maritime</span>
+      </div>
+      <div class="wu-footer">
+        <span class="wu-read">Read →</span>
+        <span class="wu-flag" style="color:var(--accent3);">⚠ In progress</span>
+      </div>
+    </div>
+
+    <!-- Corridor (duplicate card in grid) -->
+    <a href="corridor-writeup.html" class="writeup-card" data-tags="thm web idor" style="text-decoration:none;color:inherit;">
+      <div class="wu-meta">
+        <span class="wu-platform platform-thm">TryHackMe</span>
+        <span class="wu-diff diff-easy">Easy</span>
+        <span class="wu-date">Apr 2025</span>
+      </div>
+      <div class="wu-title">Corridor — IDOR via MD5 Hashes</div>
+      <p class="wu-desc">Predicted URL parameters by recognising MD5(n) patterns on door endpoints. Navigated to the unlisted room md5(0) to capture the flag.</p>
+      <div class="wu-tags">
+        <span class="wu-tag">IDOR</span>
+        <span class="wu-tag">MD5</span>
+        <span class="wu-tag">Web</span>
+      </div>
+      <div class="wu-footer">
+        <span class="wu-read">Read write-up →</span>
+        <span class="wu-flag solved">✓ Flag captured</span>
+      </div>
+    </a>
+
+  </div>
+
+  <div class="empty-state" id="empty-state">No write-ups match this filter yet.</div>
+
+</div>
+
+<footer>
+  <p>© 2025 Virender Saini — built with ☕ &amp; vim</p>
+  <p><a href="index.html">← back to portfolio</a></p>
+</footer>
+
+<script>
+const filterBtns = document.querySelectorAll('.filter-btn');
+const cards = document.querySelectorAll('.writeup-card, .featured-writeup');
+const emptyState = document.getElementById('empty-state');
+
+filterBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    filterBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const filter = btn.dataset.filter;
+    let visible = 0;
+
+    cards.forEach(card => {
+      const tags = (card.dataset.tags || '').split(' ');
+      const show = filter === 'all' || tags.includes(filter);
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    emptyState.style.display = visible === 0 ? 'block' : 'none';
+    document.getElementById('stat-total').textContent = visible;
+  });
+});
+</script>
+
+</body>
+</html>
